@@ -1,0 +1,23 @@
+{% extends 'base.html' %} <!-- ЗМІНЕНО з 'clinic/base.html' -->
+
+{% block title %}Головна - Моя Клініка{% endblock %}
+
+{% block content %}
+<div class="bg-white p-8 rounded-lg shadow-md text-center">
+    <h1 class="text-4xl font-bold text-gray-800 mb-4">Ласкаво просимо до MyClinic!</h1>
+    
+    {% if user.is_authenticated %}
+        <p class="text-lg text-gray-600">
+            Перейдіть до списку лікарів, щоб записатися на прийом, або перегляньте ваші майбутні візити.
+        </p>
+        <!-- Сюди ми скоро додамо посилання на список лікарів -->
+    {% else %}
+        <p class="text-lg text-gray-600">
+            Будь ласка, <a href="{% url 'login' %}" class="text-blue-600 hover:underline">увійдіть</a> 
+            або <a href="{% url 'register' %}" class="text-blue-600 hover:underline">зареєструйтеся</a>, 
+            щоб отримати доступ до запису онлайн.
+        </p>
+    {% endif %}
+</div>
+{% endblock %}
+

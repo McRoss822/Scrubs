@@ -1,0 +1,29 @@
+/* --- !!! ДУЖЕ ВАЖЛИВЕ ПОПЕРЕДЖЕННЯ !!! ---
+   
+   Директиви Tailwind `@apply` НЕ БУДУТЬ ПРАЦЮВАТИ у звичайному
+   .css файлі, якщо ви просто підключаєте Tailwind CDN. 
+   
+   Вони вимагають "процесу збірки" (Tailwind build process з PostCSS).
+
+   У вас є 2 варіанти:
+   1. (ПРОСТІШИЙ) Повернути цей блок <style>...</style> назад у 
+      `templates/base.html`. Це найшвидший варіант.
+   2. (СКЛАДНІШИЙ) Налаштувати повний процес збірки Tailwind CSS
+      для вашого Django-проекту.
+   3. (АЛЬТЕРНАТИВА) Переписати ці стилі на звичайний CSS, 
+      не використовуючи `@apply`.
+*/
+
+/* Якщо ви оберете варіант 1, просто перенесіть цей код 
+   назад у <style>...</style> в `base.html`.
+*/
+
+.form-input { 
+    @apply w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500; 
+}
+.btn { 
+    @apply px-4 py-2 rounded-md font-medium text-white shadow-sm; 
+}
+.btn-primary { 
+    @apply bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500; 
+}
