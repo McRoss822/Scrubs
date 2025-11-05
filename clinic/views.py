@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
 from django.db import models # Потрібно для Q
+import datetime # --- ПОТРІБНО ДЛЯ СТВОРЕННЯ СЛОТІВ ---
 
 from .forms import PatientRegisterForm
 from .models import Doctor, Specialty, TimeSlot, Patient, Appointment, User 
@@ -72,15 +73,11 @@ def doctor_detail_view(request, doctor_id):
             messages.error(request, 'Будь ласка, увійдіть, щоб забронювати прийом.')
             return redirect('login')
         
-        # --- СТАНДАРТИЗОВАНА ПЕРЕВІРКА ---
-        # Використовуємо той самий надійний метод, що і в patient_dashboard
         try:
             patient = Patient.objects.get(user=request.user)
         except Patient.DoesNotExist:
              messages.error(request, 'Лише пацієнти можуть бронювати прийоми.')
              return redirect('doctor_detail', doctor_id=doctor.pk)
-        
-        # --- Кінець перевірки ---
         
         time_slot_id = request.POST.get('time_slot_id')
         
@@ -110,20 +107,12 @@ def patient_dashboard_view(request):
     """
     Особистий кабінет пацієнта.
     Шлях: patient_dashboard.html
-    
-    --- НАДІЙНА ПЕРЕВІРКА ---
     """
     try:
-        # Намагаємося отримати профіль пацієнта, 
-        # пов'язаний з поточним залогіненим користувачем
         patient = Patient.objects.get(user=request.user)
-        
     except Patient.DoesNotExist:
-        # Якщо профіль не знайдено (або це Адмін, або Лікар)
         messages.error(request, 'Ця сторінка доступна лише для пацієнтів.')
         return redirect('home')
-
-    # --- Кінець перевірки ---
 
     now = timezone.now()
     
@@ -132,9 +121,6 @@ def patient_dashboard_view(request):
     ).order_by('time_slot__start_time')
     
     future_appointments = appointments.filter(time_slot__start_time__gte=now)
-    
-    # --- ОСЬ ТУТ ВИПРАВЛЕНО ---
-    # Додано знак '='
     past_appointments = appointments.filter(time_slot__start_time__lt=now)
     
     context = {
@@ -142,3 +128,96 @@ def patient_dashboard_view(request):
         'past_appointments': past_appointments,
     }
     return render(request, 'patient_dashboard.html', context)
+
+# --- ОНОВЛЕНИЙ VIEW ---
+@login_required
+def doctor_dashboard_view(request):
+    """
+    Особистий кабінет лікаря.
+    Дозволяє керувати розкладом та переглядати записи.
+    Шлях: doctor_dashboard.html
+    """
+    try:
+        doctor = Doctor.objects.get(user=request.user)
+    except Doctor.DoesNotExist:
+        messages.error(request, 'Ця сторінка доступна лише для лікарів.')
+        return redirect('home')
+
+    # --- ЛОГІКА СТВОРЕННЯ СЛОТІВ (POST) ---
+    if request.method == 'POST':
+        try:
+            date_str = request.POST.get('date')
+            start_time_str = request.POST.get('start_time')
+            end_time_str = request.POST.get('end_time')
+            interval_min = int(request.POST.get('interval', 30))
+
+            # 1. Парсимо дату і час
+            date_obj = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+            start_time_obj = datetime.datetime.strptime(start_time_str, '%H:%M').time()
+            end_time_obj = datetime.datetime.strptime(end_time_str, '%H:%M').time()
+            
+            # 2. Перетворюємо на timezone-aware datetime
+            current_dt = timezone.make_aware(datetime.datetime.combine(date_obj, start_time_obj))
+            end_dt = timezone.make_aware(datetime.datetime.combine(date_obj, end_time_obj))
+            interval = datetime.timedelta(minutes=interval_min)
+            
+            # 3. Перевірки
+            if current_dt < timezone.now():
+                raise ValueError("Неможливо створити слоти у минулому.")
+            if end_dt <= current_dt:
+                raise ValueError("Час закінчення має бути пізніше часу початку.")
+
+            # 4. Цикл генерації слотів
+            slots_created_count = 0
+            while current_dt < end_dt:
+                slot_end_time = current_dt + interval
+                if slot_end_time > end_dt:
+                    break # Не створюємо "обрізаний" слот
+                
+                # Перевірка на конфлікт (чи такий слот вже існує)
+                exists = TimeSlot.objects.filter(
+                    doctor=doctor,
+                    start_time=current_dt
+                ).exists()
+                
+                if not exists:
+                    TimeSlot.objects.create(
+                        doctor=doctor,
+                        start_time=current_dt,
+                        end_time=slot_end_time,
+                        is_available=True
+                    )
+                    slots_created_count += 1
+                
+                current_dt = slot_end_time # Переходимо до наступного слоту
+            
+            if slots_created_count > 0:
+                messages.success(request, f'Успішно додано {slots_created_count} нових слотів.')
+            else:
+                messages.info(request, 'Не було створено нових слотів (можливо, вони вже існують).')
+                
+        except Exception as e:
+            messages.error(request, f'Помилка при створенні слотів: {e}')
+        
+        return redirect('doctor_dashboard')
+    
+    # --- ЛОГІКА ВІДОБРАЖЕННЯ (GET) ---
+    now = timezone.now()
+    
+    appointments = Appointment.objects.filter(doctor=doctor).select_related(
+        'patient__user', 'time_slot'
+    ).order_by('time_slot__start_time')
+    
+    future_appointments = appointments.filter(time_slot__start_time__gte=now)
+    past_appointments = appointments.filter(time_slot__start_time__lt=now)
+    
+    # Потрібно для 'min' атрибуту в формі
+    today = timezone.localdate().strftime('%Y-%m-%d')
+    
+    context = {
+        'doctor': doctor,
+        'future_appointments': future_appointments,
+        'past_appointments': past_appointments,
+        'today': today, # Передаємо сьогоднішню дату в шаблон
+    }
+    return render(request, 'doctor_dashboard.html', context)

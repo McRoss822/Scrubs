@@ -15,4 +15,7 @@ urlpatterns = [
 
     # Особистий кабінет
     path('my-appointments/', views.patient_dashboard_view, name='patient_dashboard'),
+
+    # --- НОВИЙ URL ---
+    path('my-schedule/', views.doctor_dashboard_view, name='doctor_dashboard'),
 ]
