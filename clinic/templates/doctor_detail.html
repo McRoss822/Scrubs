@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}Профіль Лікаря - {{ doctor.user.first_name }} {{ doctor.user.last_name }}{% endblock %}
+
+{% block content %}
+<div class="bg-white p-6 rounded-lg shadow-md max-w-4xl mx-auto">
+    
+    <!-- Сповіщення (Повідомлення) -->
+    {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+                <div class="p-4 rounded-md 
+                            {% if message.tags == 'success' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Інформація про Лікаря -->
+    <div class="mb-6 pb-6 border-b border-gray-200">
+        <h1 class="text-3xl font-bold text-gray-800">{{ doctor.user.first_name }} {{ doctor.user.last_name }}</h1>
+        <p class="text-xl text-blue-600 font-semibold mt-1">{{ doctor.specialty.name }}</p>
+        <p class="text-gray-600 mt-4">{{ doctor.bio|default:"Детальний опис профілю лікаря буде додано незабаром." }}</p>
+    </div>
+
+    <!-- Доступні Слоти для Запису -->
+    <div>
+        <h2 class="text-2xl font-semibold text-gray-800 mb-4">Доступний час для запису</h2>
+        
+        {% if available_slots %}
+            <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                
+                {% for slot in available_slots %}
+                    <!-- 
+                        Форма для бронювання. Кожна кнопка - це окрема форма.
+                        Ми відправляємо 'time_slot_id'
+                    -->
+                    <form method="POST" action="{% url 'doctor_detail' doctor.pk %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="time_slot_id" value="{{ slot.id }}">
+                        <button type="submit" 
+                                class="w-full text-center font-medium p-3 rounded-lg 
+                                       bg-green-100 text-green-800 
+                                       hover:bg-green-600 hover:text-white 
+                                       transition-colors duration-200 shadow-sm">
+                            {{ slot.start_time|time:"H:i" }}
+                        </button>
+                    </form>
+                {% endfor %}
+                
+            </div>
+        {% else %}
+            <p class="text-center text-gray-500 py-4 bg-gray-50 rounded-md">
+                На жаль, на найближчий час вільних слотів немає.
+            </p>
+        {% endif %}
+    </div>
+    
+</div>
+{% endblock %}

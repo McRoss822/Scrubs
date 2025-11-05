@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Наші Лікарі - Моя Клініка{% endblock %}
+
+{% block content %}
+<div class="bg-white p-6 rounded-lg shadow-md">
+    
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Наші Лікарі</h1>
+        
+        <!-- Форма Фільтрації -->
+        <form method="GET" action="{% url 'doctor_list' %}" class="flex items-center">
+            <label for="specialty" class="mr-2 text-sm font-medium text-gray-700">Фільтр:</label>
+            <select name="specialty" id="specialty" class="form-input w-48 mr-2" onchange="this.form.submit()">
+                <option value="">Всі спеціалізації</option>
+                {% for spec in specialties %}
+                    <option value="{{ spec.id }}" 
+                            {% if spec.id|stringformat:"s" == selected_specialty_id %}selected{% endif %}>
+                        {{ spec.name }}
+                    </option>
+                {% endfor %}
+            </select>
+            <a href="{% url 'doctor_list' %}" class="text-xs text-gray-500 hover:text-gray-700">Скинути</a>
+        </form>
+    </div>
+
+    <!-- Список Лікарів -->
+    <div class="space-y-4">
+        
+        {% for doctor in doctors %}
+            <div class="p-4 border border-gray-200 rounded-lg flex items-center justify-between shadow-sm">
+                <div>
+                    <h2 class="text-xl font-semibold text-blue-600">
+                        <!-- 
+                            ВИПРАВЛЕНО:
+                            Використовуємо 'doctor.pk' замість 'doctor.id',
+                            оскільки Primary Key - це поле 'user'.
+                        -->
+                        <a href="{% url 'doctor_detail' doctor.pk %}" class="hover:underline">
+                            {{ doctor.user.first_name }} {{ doctor.user.last_name }}
+                        </a>
+                    </h2>
+                    <p class="text-md text-gray-700">{{ doctor.specialty.name }}</p>
+                    <p class="text-sm text-gray-500 mt-1">{{ doctor.bio|default:"Немає опису"|truncatewords:20 }}</p>
+                </div>
+                <div>
+                    <!-- ВИПРАВЛЕНО: 'doctor.pk' -->
+                    <a href="{% url 'doctor_detail' doctor.pk %}" class="btn btn-primary">
+                        Переглянути профіль
+                    </a>
+                </div>
+            </div>
+        {% empty %}
+            <p class="text-center text-gray-500">За вашим запитом лікарів не знайдено.</p>
+        {% endfor %}
+    </div>
+    
+</div>
+{% endblock %}

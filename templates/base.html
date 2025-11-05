@@ -1,17 +1,23 @@
-{% load static %} <!--ВАЖЛИВО: Завантажуємо тег static -->
+{% load static %}
 <!DOCTYPE html>
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale-1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Моя Клініка{% endblock %}</title>
-    <!-- Підключаємо Tailwind CSS для швидкого стилю -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Підключаємо наш новий, окремий CSS файл -->
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
-
-    <!-- Видалено блок <style>...</style> звідси -->
+    <style>
+        .form-input { 
+            @apply w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500; 
+        }
+        .btn { 
+            @apply px-4 py-2 rounded-md font-medium text-white shadow-sm; 
+        }
+        .btn-primary { 
+            @apply bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500; 
+        }
+    </style>
 </head>
 <body class="bg-gray-100 font-sans">
 
@@ -24,27 +30,54 @@
                         MyClinic
                     </a>
                 </div>
+                
+                <!-- Навігаційні посилання -->
+                <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                    <a href="{% url 'home' %}" class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">
+                        Головна
+                    </a>
+                    <a href="{% url 'doctor_list' %}" class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">
+                        Лікарі
+                    </a>
+                    {% if user.is_authenticated and user.role == 'PATIENT' %}
+                    <a href="{% url 'patient_dashboard' %}" class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">
+                        Мої Записи
+                    </a>
+                    {% endif %}
+                </div>
+
                 <div class="flex items-center">
                     {% if user.is_authenticated %}
-                        <span class="mr-4">Вітаємо, {{ user.first_name|default:user.username }}!</span>
-                        <!-- Тут будуть посилання на "Мої записи" та "Лікарі" -->
+                        <span class="mr-4 text-sm text-gray-700">Вітаємо, {{ user.first_name|default:user.username }}!</span>
                         
-                        <!-- ЗМІНЕНО: "Вийти" - це тепер форма, щоб відправити POST-запит -->
                         <form action="{% url 'logout' %}" method="POST" class="inline">
                             {% csrf_token %}
-                            <!-- Ми стилізуємо кнопку так, щоб вона виглядала як посилання -->
-                            <button type="submit" class="text-gray-500 hover:text-gray-700 bg-transparent border-none p-0 m-0 cursor-pointer">
+                            <button type"submit" class="text-gray-500 hover:text-gray-700 bg-transparent border-none p-0 m-0 cursor-pointer text-sm">
                                 Вийти
                             </button>
                         </form>
                     {% else %}
-                        <a href="{% url 'login' %}" class="text-gray-500 hover:text-gray-700 mr-4">Увійти</a>
-                        <a href="{% url 'register' %}" class="btn btn-primary">Зареєструватися</a>
+                        <a href="{% url 'login' %}" class="text-gray-500 hover:text-gray-700 mr-4 text-sm">Увійти</a>
+                        <a href="{% url 'register' %}" class="btn btn-primary text-sm">Зареєструватися</a>
                     {% endif %}
                 </div>
             </div>
         </div>
     </nav>
+
+    <!-- Відображення сповіщень (Messages) -->
+    {% if messages %}
+        <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+            {% for message in messages %}
+                <div class="p-4 rounded-md 
+                            {% if message.tags == 'success' %} bg-green-100 text-green-800 {% endif %}
+                            {% if message.tags == 'error' %} bg-red-100 text-red-800 {% endif %}"
+                     role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
 
     <!-- Основний контент сторінки -->
     <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
@@ -53,7 +86,6 @@
         {% endblock %}
     </main>
     
-    <!-- Підключаємо наш новий, окремий JS файл -->
     <script src="{% static 'js/main.js' %}" defer></script>
 </body>
 </html>
